@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(IMGUI_DIR 3rdparty/imgui)
 
-include_directories(include 3rdparty/imgui 3rdparty/glfw/include/GLFW)
+include_directories(include ${IMGUI_DIR} 3rdparty/glfw/include)
 
 add_executable(SignalProc src/main.cpp ${IMGUI_DIR}/imgui.cpp
                ${IMGUI_DIR}/backends/imgui_impl_glfw.cpp
@@ -17,5 +17,4 @@ add_executable(SignalProc src/main.cpp ${IMGUI_DIR}/imgui.cpp
                ${IMGUI_DIR}/imgui_widgets.cpp
                ${IMGUI_DIR}/imgui_demo.cpp)
 
-target_link_libraries(SignalProc PUBLIC GL)
-target_link_libraries(SignalProc PUBLIC glfw)
+target_link_libraries(SignalProc PUBLIC GL glfw ${CMAKE_DL_LIBS})
