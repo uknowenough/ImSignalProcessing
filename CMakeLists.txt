@@ -10,7 +10,10 @@ set(IMPLOT_DIR 3rdparty/implot)
 
 include_directories(include ${IMGUI_DIR} ${IMPLOT_DIR} 3rdparty/glfw/include)
 
-add_executable(SignalProc src/main.cpp
+add_executable(SignalProc
+           src/main.cpp
+           include/algorithms/FFTButterfly.h
+           src/algorithms/FFTButterfly.cpp
            ${IMGUI_DIR}/imgui.cpp
            ${IMGUI_DIR}/backends/imgui_impl_glfw.cpp
            ${IMGUI_DIR}/backends/imgui_impl_opengl3.cpp

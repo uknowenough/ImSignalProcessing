@@ -16,6 +16,10 @@
 
 #include "implot.h"
 
+#include "algorithms/FFTButterfly.h"
+
+#include <cmath>
+
 static void glfw_error_callback(int error, const char* description)
 {
   fprintf(stderr, "Glfw Error %d: %s\n", error, description);
@@ -52,7 +56,7 @@ int main(int, char**)
 #endif
 
   // Create window with graphics context
-  GLFWwindow* window = glfwCreateWindow(1280, 720, "Dear ImGui GLFW+OpenGL3 example", NULL, NULL);
+  GLFWwindow* window = glfwCreateWindow(1280, 720, "Signal Processing", NULL, NULL);
   if (window == NULL)
     return 1;
   glfwMakeContextCurrent(window);
@@ -65,9 +69,12 @@ int main(int, char**)
   //io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
   //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
 
+  auto context = ImPlot::CreateContext();
+  ImPlot::SetCurrentContext(context);
+
   // Setup Dear ImGui style
-  ImGui::StyleColorsDark();
-  //ImGui::StyleColorsClassic();
+  //ImGui::StyleColorsDark();
+  ImGui::StyleColorsClassic();
 
   // Setup Platform/Renderer backends
   ImGui_ImplGlfw_InitForOpenGL(window, true);
@@ -77,6 +84,16 @@ int main(int, char**)
   bool show_demo_window = true;
   bool show_another_window = false;
   ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+
+  static bool use_work_area = true;
+  static ImGuiWindowFlags flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoSavedSettings;
+  static bool* p_open = new bool(true);
+
+  auto& imgui_style = ImGui::GetStyle();
+  auto& implot_style = ImPlot::GetStyle();
+
+  imgui_style.AntiAliasedLines = true;
+  implot_style.AntiAliasedLines = true;
 
   // Main loop
   while (!glfwWindowShouldClose(window))
@@ -93,47 +110,60 @@ int main(int, char**)
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 
-    // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
-    if (show_demo_window)
-      ImGui::ShowDemoWindow(&show_demo_window);
+    static float xs1[1001], ys1[1001];
+    static std::complex<double>* signal = new std::complex<double>[1001];
+    static std::complex<double>* spectrum = new std::complex<double>[1001];
+    static FFTButterfly fft;
+    for (int i = 0; i < 1001; ++i) {
+//      double f = 250; // частота синусоидального сигнала
+//      double fd = 10000; // частота дискретизации
+//      double w = 2 * M_PI *f/fd; // относительная круговая частота
+//      double A = 1; // амплитуда сигнала
 
-          // 2. Show a simple window that we create ourselves. We use a Begin/End pair to created a named window.
-    {
-      static float f = 0.0f;
-      static int counter = 0;
+//      xs1[i] = i;
+//      ys1[i] = A*sin(w*i);
+//      //ys1[i] = 0.5f + 0.5f * sinf(100 * (xs1[i] + (float)ImGui::GetTime() / 10));
 
-      ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
+//      signal[i].real(ys1[i]);
 
-      ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
-      ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
-      ImGui::Checkbox("Another Window", &show_another_window);
+      xs1[i] = i * 0.001f;
+      ys1[i] = 1.0f * sinf(50 * (xs1[i] + (float)ImGui::GetTime() / 10));
 
-      ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
-      ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
-
-      if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
-        counter++;
-      ImGui::SameLine();
-      ImGui::Text("counter = %d", counter);
-
-      ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-      ImGui::End();
+      signal[i].real(ys1[i]);
     }
 
-    auto context = ImPlot::CreateContext();
-    ImPlot::SetCurrentContext(context);
-    ImPlot::ShowDemoWindow();
-    ImPlot::DestroyContext(context);
+    fft.FourierTransform(signal, spectrum, 1001, FFTButterfly::Direction::kDirect);
 
-    // 3. Show another simple window.
-    if (show_another_window)
-    {
-      ImGui::Begin("Another Window", &show_another_window);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
-      ImGui::Text("Hello from another window!");
-      if (ImGui::Button("Close Me"))
-        show_another_window = false;
-      ImGui::End();
+    static float x_spectrum[1001], y_spectrum[1001];
+    for (int i = 0; i < 1001; ++i) {
+      x_spectrum[i] = i;
+      y_spectrum[i] = std::sqrt(spectrum[i].real() * spectrum[i].real() + spectrum[i].imag() * spectrum[i].imag());
     }
+
+    // We demonstrate using the full viewport area or the work area (without menu-bars, task-bars etc.)
+    // Based on your use case you may want one of the other.
+    const ImGuiViewport* viewport = ImGui::GetMainViewport();
+    ImGui::SetNextWindowPos(use_work_area ? viewport->WorkPos : viewport->Pos);
+    ImGui::SetNextWindowSize(use_work_area ? viewport->WorkSize : viewport->Size);
+
+    if (ImGui::Begin("Example: Fullscreen window", p_open, flags))
+    {
+      if (ImPlot::BeginPlot("Line Plot")) {
+        ImPlot::SetupAxes("x","f(x)");
+        ImPlot::PlotLine("sin(x)", xs1, ys1, 1001);
+        ImPlot::EndPlot();
+      }
+
+      if (ImPlot::BeginPlot("Spectrum Plot")) {
+        ImPlot::SetupAxes("f","f(x)");
+        ImPlot::PlotLine("spectrum", x_spectrum, y_spectrum, 1001);
+        ImPlot::EndPlot();
+      }
+
+      if (p_open)
+        *p_open = false;
+    }
+    ImGui::End();
 
     // Rendering
     ImGui::Render();
@@ -146,6 +176,8 @@ int main(int, char**)
 
     glfwSwapBuffers(window);
   }
+
+  ImPlot::DestroyContext(context);
 
   // Cleanup
   ImGui_ImplOpenGL3_Shutdown();
