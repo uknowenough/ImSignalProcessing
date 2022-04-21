@@ -14,6 +14,8 @@
 #pragma comment(lib, "legacy_stdio_definitions")
 #endif
 
+#include "implot.h"
+
 static void glfw_error_callback(int error, const char* description)
 {
   fprintf(stderr, "Glfw Error %d: %s\n", error, description);
@@ -117,6 +119,11 @@ int main(int, char**)
       ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
       ImGui::End();
     }
+
+    auto context = ImPlot::CreateContext();
+    ImPlot::SetCurrentContext(context);
+    ImPlot::ShowDemoWindow();
+    ImPlot::DestroyContext(context);
 
     // 3. Show another simple window.
     if (show_another_window)
