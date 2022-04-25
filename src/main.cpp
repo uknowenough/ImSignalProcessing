@@ -110,32 +110,34 @@ int main(int, char**)
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 
-    static float xs1[1001], ys1[1001];
-    static std::complex<double>* signal = new std::complex<double>[1001];
-    static std::complex<double>* spectrum = new std::complex<double>[1001];
-    static FFTButterfly fft;
-    for (int i = 0; i < 1001; ++i) {
-//      double f = 250; // частота синусоидального сигнала
-//      double fd = 10000; // частота дискретизации
-//      double w = 2 * M_PI *f/fd; // относительная круговая частота
-//      double A = 1; // амплитуда сигнала
+    static const int N = 4096;
 
-//      xs1[i] = i;
-//      ys1[i] = A*sin(w*i);
+    static float xs1[N], ys1[N];
+    static std::complex<double>* signal = new std::complex<double>[N];
+    static std::complex<double>* spectrum = new std::complex<double>[N];
+    static FFTButterfly fft;
+    for (int i = 0; i < N; ++i) {
+      double f = 250; // частота синусоидального сигнала
+      double fd = 10000; // частота дискретизации
+      double w = 2 * M_PI * f / fd; // относительная круговая частота
+      double A = 1; // амплитуда сигнала
+
+      xs1[i] = i;
+      ys1[i] = A * sinf(w * (xs1[i] + (float)ImGui::GetTime() / 10));
 //      //ys1[i] = 0.5f + 0.5f * sinf(100 * (xs1[i] + (float)ImGui::GetTime() / 10));
 
 //      signal[i].real(ys1[i]);
 
-      xs1[i] = i * 0.001f;
-      ys1[i] = 1.0f * sinf(50 * (xs1[i] + (float)ImGui::GetTime() / 10));
+      //xs1[i] = i * 0.001f;
+      //ys1[i] = 1.0f * sinf(500 * (xs1[i] + (float)ImGui::GetTime() / 10));
 
       signal[i].real(ys1[i]);
     }
 
-    fft.FourierTransform(signal, spectrum, 1001, FFTButterfly::Direction::kDirect);
+    fft.FourierTransform(signal, spectrum, N, FFTButterfly::Direction::kDirect);
 
-    static float x_spectrum[1001], y_spectrum[1001];
-    for (int i = 0; i < 1001; ++i) {
+    static float x_spectrum[N], y_spectrum[N];
+    for (int i = 0; i < N; ++i) {
       x_spectrum[i] = i;
       y_spectrum[i] = std::sqrt(spectrum[i].real() * spectrum[i].real() + spectrum[i].imag() * spectrum[i].imag());
     }
