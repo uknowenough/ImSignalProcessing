@@ -14,6 +14,12 @@ add_executable(SignalProc
            src/main.cpp
            include/algorithms/FFTButterfly.h
            src/algorithms/FFTButterfly.cpp
+           include/ASignalGenerator.h
+           src/ASignalGenerator.cpp
+           include/SinGenerator.h
+           src/SinGenerator.cpp
+           include/CosGenerator.h
+           src/CosGenerator.cpp
            ${IMGUI_DIR}/imgui.cpp
            ${IMGUI_DIR}/backends/imgui_impl_glfw.cpp
            ${IMGUI_DIR}/backends/imgui_impl_opengl3.cpp

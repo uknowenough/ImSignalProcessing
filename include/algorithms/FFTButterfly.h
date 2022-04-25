@@ -11,10 +11,7 @@ class FFTButterfly
     kInverse
   };
 
- public:
-  FFTButterfly();
-
-  void FourierTransform(std::complex<double> *signal, std::complex<double> *spectrum, int size, Direction type);
+  static void FourierTransform(std::complex<double> *signal, std::complex<double> *spectrum, int size, Direction type);
 };
 
 #endif // FFTBUTTERFLY_H

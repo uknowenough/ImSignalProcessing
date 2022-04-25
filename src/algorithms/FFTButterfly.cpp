@@ -1,10 +1,5 @@
 #include "algorithms/FFTButterfly.h"
 
-FFTButterfly::FFTButterfly()
-{
-
-}
-
 void FFTButterfly::FourierTransform(std::complex<double> *signal,
                                     std::complex<double> *spectrum,
                                     int size, Direction type)

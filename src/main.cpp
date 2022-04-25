@@ -14,9 +14,13 @@
 #pragma comment(lib, "legacy_stdio_definitions")
 #endif
 
+#include <memory>
+
 #include "implot.h"
 
 #include "algorithms/FFTButterfly.h"
+#include "SinGenerator.h"
+#include "CosGenerator.h"
 
 #include <cmath>
 
@@ -95,6 +99,20 @@ int main(int, char**)
   imgui_style.AntiAliasedLines = true;
   implot_style.AntiAliasedLines = true;
 
+  std::vector<std::shared_ptr<ASignalGenerator>> generators;
+
+  generators.push_back(std::make_shared<SinGenerator>());
+  generators.back()->setSignalFreq(250);
+  generators.back()->setSamplingFreq(10000);
+  generators.back()->setAmplitude(1);
+  generators.back()->setSize(4096);
+
+  generators.push_back(std::make_shared<CosGenerator>());
+  generators.back()->setSignalFreq(250);
+  generators.back()->setSamplingFreq(10000);
+  generators.back()->setAmplitude(1);
+  generators.back()->setSize(4096);
+
   // Main loop
   while (!glfwWindowShouldClose(window))
   {
@@ -110,38 +128,6 @@ int main(int, char**)
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 
-    static const int N = 4096;
-
-    static float xs1[N], ys1[N];
-    static std::complex<double>* signal = new std::complex<double>[N];
-    static std::complex<double>* spectrum = new std::complex<double>[N];
-    static FFTButterfly fft;
-    for (int i = 0; i < N; ++i) {
-      double f = 250; // частота синусоидального сигнала
-      double fd = 10000; // частота дискретизации
-      double w = 2 * M_PI * f / fd; // относительная круговая частота
-      double A = 1; // амплитуда сигнала
-
-      xs1[i] = i;
-      ys1[i] = A * sinf(w * (xs1[i] + (float)ImGui::GetTime() / 10));
-//      //ys1[i] = 0.5f + 0.5f * sinf(100 * (xs1[i] + (float)ImGui::GetTime() / 10));
-
-//      signal[i].real(ys1[i]);
-
-      //xs1[i] = i * 0.001f;
-      //ys1[i] = 1.0f * sinf(500 * (xs1[i] + (float)ImGui::GetTime() / 10));
-
-      signal[i].real(ys1[i]);
-    }
-
-    fft.FourierTransform(signal, spectrum, N, FFTButterfly::Direction::kDirect);
-
-    static float x_spectrum[N], y_spectrum[N];
-    for (int i = 0; i < N; ++i) {
-      x_spectrum[i] = i;
-      y_spectrum[i] = std::sqrt(spectrum[i].real() * spectrum[i].real() + spectrum[i].imag() * spectrum[i].imag());
-    }
-
     // We demonstrate using the full viewport area or the work area (without menu-bars, task-bars etc.)
     // Based on your use case you may want one of the other.
     const ImGuiViewport* viewport = ImGui::GetMainViewport();
@@ -150,16 +136,18 @@ int main(int, char**)
 
     if (ImGui::Begin("Example: Fullscreen window", p_open, flags))
     {
-      if (ImPlot::BeginPlot("Line Plot")) {
-        ImPlot::SetupAxes("x","f(x)");
-        ImPlot::PlotLine("sin(x)", xs1, ys1, 1001);
-        ImPlot::EndPlot();
-      }
+      for (const auto& generator : generators) {
+        if (ImPlot::BeginPlot("Signal Plot")) {
+          ImPlot::SetupAxes("x","f(x)");
+          ImPlot::PlotLine(generator->name().c_str(), generator->signal_x().data(), generator->signal_y().data(), generator->size());
+          ImPlot::EndPlot();
+        }
 
-      if (ImPlot::BeginPlot("Spectrum Plot")) {
-        ImPlot::SetupAxes("f","f(x)");
-        ImPlot::PlotLine("spectrum", x_spectrum, y_spectrum, 1001);
-        ImPlot::EndPlot();
+        if (ImPlot::BeginPlot("Spectrum Plot")) {
+          ImPlot::SetupAxes("f","f(x)");
+          ImPlot::PlotLine("spectrum", generator->spectrum_x().data(), generator->spectrum_y().data(), generator->size());
+          ImPlot::EndPlot();
+        }
       }
 
       if (p_open)
